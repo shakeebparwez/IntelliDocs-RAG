@@ -1,7 +1,3 @@
-Here’s your updated README with an image section added for the screenshot:
-
----
-
 # Intelligent Document Management and Query System
 
 ## Overview
