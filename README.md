@@ -1,3 +1,7 @@
+Here’s your updated README with an image section added for the screenshot:
+
+---
+
 # Intelligent Document Management and Query System
 
 ## Overview
@@ -30,9 +34,13 @@ To make this project more research-paper oriented, the following enhancements wi
 - **Vector Databases** (Efficient Storage & Retrieval)
 - **Streamlit** (User Interface)
 
+## Screenshot
+![App Screenshot](Screenshot_Prototype.png)  
+
 ## Next Steps
 - Fine-tune retrieval parameters to optimize accuracy.
 - Improve query handling for better contextual understanding.
 - Expand dataset coverage for domain-specific testing.
 - Prepare research paper detailing architecture, benchmarks, and optimizations.
 
+---
