@@ -1,42 +1,68 @@
-# Intelligent Document Management and Query System
+# 🤖 IntelliDocs-RAG: Local PDF Chatbot using RAG & Offline LLM
 
-## Overview
-This project implements a **Retrieval-Augmented Generation (RAG)** system for intelligent document management and query resolution. It is designed to extract relevant insights from documents using **DeepSeek R1: 1.5B** as the core language model.
+![Screenshot](screenshot.png)
 
-## Features
-- **Document Upload & Processing**: Users can upload PDFs which are then processed and indexed.
-- **Chunking & Vectorization**: The text is split into manageable chunks and stored in an efficient vector database.
-- **Semantic Search**: Users can input queries, and the system retrieves the most relevant document fragments.
-- **Context-Aware Responses**: The retrieved context is used to generate accurate and concise answers.
+**IntelliDocs-RAG** is an intelligent chatbot system that lets users chat with their own PDF documents securely and privately — with **zero internet dependency**. Using a Retrieval-Augmented Generation (RAG) pipeline and a local LLM (via Ollama), the app provides fast, offline, and context-aware responses based on the content of multiple uploaded PDFs.
 
-## Optimization Goals
-To make this project more research-paper oriented, the following enhancements will be implemented:
-- **Domain-Specific Optimization**: Fine-tuning the RAG system for specific use cases (e.g., legal, healthcare, finance).
-- **Efficiency Improvements**: Reducing retrieval latency and improving search accuracy.
-- **Advanced Query Understanding**: Enhancing NLP capabilities to better interpret user intent.
-- **Evaluation Metrics**: Defining and implementing robust performance benchmarks.
-
-## How It Works
-1. **Upload**: Users upload PDFs.
-2. **Processing**: The text is extracted and chunked.
-3. **Embedding**: Chunks are converted into vector embeddings.
-4. **Storage**: The embeddings are stored in a vector database.
-5. **Retrieval & Response**: User queries fetch relevant document sections, which are then used to generate responses.
-
-## Technologies Used
-- **DeepSeek R1: 1.5B** (Language Model)
-- **FastAPI** (Backend API Framework)
-- **LangChain** (RAG Implementation)
-- **Vector Databases** (Efficient Storage & Retrieval)
-- **Streamlit** (User Interface)
-
-## Screenshot
-![App Screenshot](Screenshot_Prototype.png)  
-
-## Next Steps
-- Fine-tune retrieval parameters to optimize accuracy.
-- Improve query handling for better contextual understanding.
-- Expand dataset coverage for domain-specific testing.
-- Prepare research paper detailing architecture, benchmarks, and optimizations.
+This project was developed as a **Final Year B.Tech Project** at the **National Institute of Technology, Kurukshetra (NIT Kurukshetra)**.
 
 ---
+
+## 🎓 Project Team
+
+- **Shakeeb Parwez**
+- **Kushagra Agarwal**
+- **Ayush Goyal**
+
+**Guided by:** *Assistant Professor Dr. Sweeti Sah*
+
+---
+
+## 🧠 Real-World Use Case
+
+> **Imagine a researcher working in a remote lab** with no internet access. They have a dozen PDF research papers on their topic and want quick answers without manually reading each one. Using **IntelliDocs-RAG**, they upload all PDFs and ask:
+>  
+> *"What are the key findings of paper 3?"*  
+> *"Which papers discuss deep learning on time-series data?"*  
+>  
+> The system quickly returns accurate answers powered by a local LLM — no internet, no privacy concerns, and no hassle.
+
+---
+
+## 🔒 Why This Project Matters
+
+Modern LLM apps often rely on cloud APIs (OpenAI, Google, Anthropic), making them:
+
+- ❌ **Dependent on Internet Connectivity**
+- ❌ **Risky for Confidential or Academic Documents**
+- ❌ **Expensive with Limited API Quotas**
+
+**IntelliDocs-RAG** solves this by offering:
+
+✅ **Offline LLM Access via Ollama**  
+✅ **Privacy-Focused Architecture** (local embeddings & vector search)  
+✅ **Open-source & Customizable for Any Domain**
+
+---
+
+## 💻 Tech Stack — Powering IntelliDocs-RAG
+
+| Component         | Tech Used                              | Purpose                                  |
+|------------------|----------------------------------------|------------------------------------------|
+| **Frontend**      | Streamlit                              | Interactive UI for uploading & chatting  |
+| **PDF Parser**    | PyPDF2                                 | Text extraction from PDFs                |
+| **Text Chunking** | LangChain CharacterTextSplitter        | Context preservation                     |
+| **Embeddings**    | OllamaEmbeddings (`deepseek-r1:1.5b`)  | Semantic understanding                   |
+| **Vector DB**     | FAISS                                  | Fast document similarity search          |
+| **LLM Backend**   | Ollama + Local Model (`deepseek-r1`)   | Private, local response generation       |
+| **Prompting**     | LangChain PromptTemplate               | Custom RAG-style Q&A prompt              |
+
+---
+
+## 🛠️ Installation & Setup
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/your-username/intellidocs-rag.git
+cd intellidocs-rag
