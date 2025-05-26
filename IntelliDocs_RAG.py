@@ -1,79 +1,118 @@
 import streamlit as st
-from langchain_community.document_loaders import PDFPlumberLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_core.vectorstores import InMemoryVectorStore
-from langchain_ollama import OllamaEmbeddings
-from langchain_core.prompts import ChatPromptTemplate
+from dotenv import load_dotenv
+from PyPDF2 import PdfReader
+from langchain.text_splitter import CharacterTextSplitter
+from langchain_community.vectorstores import FAISS
+from langchain_ollama.embeddings import OllamaEmbeddings
 from langchain_ollama.llms import OllamaLLM
-import re  # Import regex for text filtering
+from langchain.prompts import PromptTemplate
+from htmlTemplates import css, bot_template, user_template
+import re
 
-template = """
-You are an assistant for question-answering tasks. Use the retrieved context to answer the question in a **detailed and structured manner**.
-Provide a **well-explained, multi-paragraph response** summarizing all relevant details clearly. 
-Avoid unnecessary thoughts, reasoning process, or internal monologue. Focus on delivering **a rich and informative answer**.
-Question: {question} 
-Context: {context} 
-Answer:
-"""
-
-pdfs_directory = 'C:/Users/hp/chat-with-pdf/pdfs/'
-
-embeddings = OllamaEmbeddings(model="deepseek-r1:1.5b")
-vector_store = InMemoryVectorStore(embeddings)
-
-model = OllamaLLM(model="deepseek-r1:1.5b")
-
-def upload_pdf(file):
-    with open(pdfs_directory + file.name, "wb") as f:
-        f.write(file.getbuffer())
-
-def load_pdf(file_path):
-    loader = PDFPlumberLoader(file_path)
-    documents = loader.load()
-    return documents
-
-def split_text(documents):
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1500,  # Increase chunk size for more context
-        chunk_overlap=300,
-        add_start_index=True
-    )
-    return text_splitter.split_documents(documents)
-
-def index_docs(documents):
-    vector_store.add_documents(documents)
-
-def retrieve_docs(query):
-    return vector_store.similarity_search(query)
-
+# Clean <think> tags
 def clean_output(text):
-    """Removes <think> tags and their content."""
     return re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
 
-def answer_question(question, documents):
-    context = "\n\n".join([doc.page_content for doc in documents])
-    prompt = ChatPromptTemplate.from_template(template)
-    chain = prompt | model
+# Extract PDF text
+def get_pdf_text(pdf_docs):
+    text = ""
+    for pdf in pdf_docs:
+        pdf_reader = PdfReader(pdf)
+        for page in pdf_reader.pages:
+            text += page.extract_text()
+    return text
 
-    raw_answer = chain.invoke({"question": question, "context": context})
-    return clean_output(raw_answer)
+# Split into chunks
+def get_text_chunks(text):
+    text_splitter = CharacterTextSplitter(
+        separator="\n",
+        chunk_size=1000,
+        chunk_overlap=200,
+        length_function=len
+    )
+    return text_splitter.split_text(text)
 
-uploaded_file = st.file_uploader(
-    "Upload PDF",
-    type="pdf",
-    accept_multiple_files=False
-)
+# Create vector store
+def get_vectorstore(text_chunks):
+    embeddings = OllamaEmbeddings(model="deepseek-r1:1.5b")
+    vectorstore = FAISS.from_texts(texts=text_chunks, embedding=embeddings)
+    return vectorstore
 
-if uploaded_file:
-    upload_pdf(uploaded_file)
-    documents = load_pdf(pdfs_directory + uploaded_file.name)
-    chunked_documents = split_text(documents)
-    index_docs(chunked_documents)
+# Custom Question Answering
+def answer_question(llm, retriever, question):
+    docs = retriever.get_relevant_documents(question)
+    context = "\n\n".join(doc.page_content for doc in docs)
 
-    question = st.chat_input()
+    template = """
+You are a helpful assistant for answering questions based on documents.
+Use the context provided to answer the user's question **briefly and accurately**.
+Avoid unnecessary repetition or internal thoughts.
 
-    if question:
-        st.chat_message("user").write(question)
-        related_documents = retrieve_docs(question)
-        answer = answer_question(question, related_documents)
-        st.chat_message("assistant").write(answer)
+Context:
+{context}
+
+Question:
+{question}
+
+Answer:"""
+
+    prompt = PromptTemplate(template=template, input_variables=["context", "question"])
+    formatted_prompt = prompt.format(context=context, question=question)
+
+    raw_answer = llm.invoke(formatted_prompt)
+    cleaned_answer = clean_output(raw_answer)
+    return cleaned_answer
+
+# Handle user input
+def handle_userinput(user_question):
+    llm = st.session_state.llm
+    retriever = st.session_state.retriever
+    answer = answer_question(llm, retriever, user_question)
+
+    st.session_state.chat_history.append(("user", user_question))
+    st.session_state.chat_history.append(("assistant", answer))
+
+    for role, message in st.session_state.chat_history:
+        if role == "user":
+            st.write(user_template.replace("{{MSG}}", message), unsafe_allow_html=True)
+        else:
+            st.write(bot_template.replace("{{MSG}}", message), unsafe_allow_html=True)
+
+# Main app
+def main():
+    load_dotenv()
+    st.set_page_config(page_title="IntelliDocs-RAG", page_icon=":books:")
+    st.write(css, unsafe_allow_html=True)
+
+    if "vectorstore" not in st.session_state:
+        st.session_state.vectorstore = None
+    if "llm" not in st.session_state:
+        st.session_state.llm = None
+    if "retriever" not in st.session_state:
+        st.session_state.retriever = None
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
+
+    st.header("📄 IntelliDocs-RAG: Chat with your PDFs")
+
+    user_question = st.text_input("Ask a question about your documents:")
+    if user_question and st.session_state.vectorstore is not None:
+        handle_userinput(user_question)
+
+    with st.sidebar:
+        st.subheader("Your documents")
+        pdf_docs = st.file_uploader(
+            "Upload your PDFs here and click on 'Process'", accept_multiple_files=True)
+        if st.button("Process"):
+            with st.spinner("Processing PDFs..."):
+                raw_text = get_pdf_text(pdf_docs)
+                text_chunks = get_text_chunks(raw_text)
+                vectorstore = get_vectorstore(text_chunks)
+
+                st.session_state.vectorstore = vectorstore
+                st.session_state.llm = OllamaLLM(model="deepseek-r1:1.5b")
+                st.session_state.retriever = vectorstore.as_retriever()
+                st.session_state.chat_history = []
+
+if __name__ == '__main__':
+    main()
